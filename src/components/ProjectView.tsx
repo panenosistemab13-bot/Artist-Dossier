@@ -157,7 +157,6 @@ const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const playPromiseRef = useRef<Promise<void> | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
@@ -166,25 +165,25 @@ const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void 
   const resolvedAudioUrl = useResolvedUrl(track.audioUrl);
 
   React.useEffect(() => {
+    const currentAudio = audioRef.current;
+    
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-    if (audioRef.current) {
-      audioRef.current.load();
+    if (currentAudio) {
+      currentAudio.load();
     }
-  }, [resolvedAudioUrl]);
 
-  React.useEffect(() => {
     return () => {
-      if (audioRef.current) {
+      if (currentAudio) {
         try {
-          audioRef.current.pause();
+          currentAudio.pause();
         } catch (e) {
           // ignore
         }
       }
     };
-  }, []);
+  }, [resolvedAudioUrl]);
   
   const [description, setDescription] = useState(project.description || '');
 
@@ -225,37 +224,22 @@ const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void 
   };
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
     
-    const isPaused = audioRef.current.paused;
-    if (!isPaused) {
-      if (playPromiseRef.current !== null) {
-        playPromiseRef.current
-          .then(() => {
-            if (audioRef.current) {
-              audioRef.current.pause();
-            }
-          })
-          .catch((err) => {
-            console.warn('Play promise was rejected, pause ignored:', err);
-          });
-      } else {
-        audioRef.current.pause();
+    if (isPlaying) {
+      try {
+        audio.pause();
+      } catch (err) {
+        console.warn('Error pausing audio:', err);
       }
+      setIsPlaying(false);
     } else {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromiseRef.current = playPromise;
-        playPromise
-          .then(() => {
-            playPromiseRef.current = null;
-          })
-          .catch((err) => {
-            console.error('Error playing audio:', err);
-            setIsPlaying(false);
-            playPromiseRef.current = null;
-          });
-      }
+      setIsPlaying(true);
+      audio.play().catch((err) => {
+        console.warn('Audio playback prevented or interrupted:', err);
+        setIsPlaying(false);
+      });
     }
   };
 
@@ -305,7 +289,8 @@ const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void 
                 />
                 <button 
                   onClick={togglePlay}
-                  className="w-12 h-12 rounded-full flex items-center justify-center bg-amber-500 text-stone-950 hover:bg-amber-400 transition-all hover:scale-105 active:scale-95 shadow-md"
+                  disabled={!resolvedAudioUrl}
+                  className="w-12 h-12 rounded-full flex items-center justify-center bg-amber-500 text-stone-950 hover:bg-amber-400 transition-all hover:scale-105 active:scale-95 shadow-md disabled:opacity-50 disabled:pointer-events-none"
                   title={isPlaying ? "Pausar" : "Tocar"}
                 >
                   {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
@@ -388,7 +373,6 @@ const TrackItem: React.FC<{
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const playPromiseRef = useRef<Promise<void> | null>(null);
   const resolvedAudioUrl = useResolvedUrl(track.audioUrl);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -401,25 +385,25 @@ const TrackItem: React.FC<{
   };
 
   React.useEffect(() => {
+    const currentAudio = audioRef.current;
+    
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-    if (audioRef.current) {
-      audioRef.current.load();
+    if (currentAudio) {
+      currentAudio.load();
     }
-  }, [resolvedAudioUrl]);
 
-  React.useEffect(() => {
     return () => {
-      if (audioRef.current) {
+      if (currentAudio) {
         try {
-          audioRef.current.pause();
+          currentAudio.pause();
         } catch (e) {
           // ignore
         }
       }
     };
-  }, []);
+  }, [resolvedAudioUrl]);
   
   const [localName, setLocalName] = useState(track.name);
 
@@ -457,37 +441,22 @@ const TrackItem: React.FC<{
   };
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
     
-    const isPaused = audioRef.current.paused;
-    if (!isPaused) {
-      if (playPromiseRef.current !== null) {
-        playPromiseRef.current
-          .then(() => {
-            if (audioRef.current) {
-              audioRef.current.pause();
-            }
-          })
-          .catch((err) => {
-            console.warn('Play promise was rejected, pause ignored:', err);
-          });
-      } else {
-        audioRef.current.pause();
+    if (isPlaying) {
+      try {
+        audio.pause();
+      } catch (err) {
+        console.warn('Error pausing audio:', err);
       }
+      setIsPlaying(false);
     } else {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromiseRef.current = playPromise;
-        playPromise
-          .then(() => {
-            playPromiseRef.current = null;
-          })
-          .catch((err) => {
-            console.error('Error playing audio:', err);
-            setIsPlaying(false);
-            playPromiseRef.current = null;
-          });
-      }
+      setIsPlaying(true);
+      audio.play().catch((err) => {
+        console.warn('Audio playback prevented or interrupted:', err);
+        setIsPlaying(false);
+      });
     }
   };
 
@@ -559,7 +528,8 @@ const TrackItem: React.FC<{
                 />
                 <button 
                   onClick={togglePlay}
-                  className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500 text-stone-950 hover:bg-amber-400 transition-all hover:scale-105 active:scale-95 shadow-md"
+                  disabled={!resolvedAudioUrl}
+                  className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500 text-stone-950 hover:bg-amber-400 transition-all hover:scale-105 active:scale-95 shadow-md disabled:opacity-50 disabled:pointer-events-none"
                   title={isPlaying ? "Pausar" : "Tocar"}
                 >
                   {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-1" />}
