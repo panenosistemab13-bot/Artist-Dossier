@@ -108,7 +108,7 @@ export function ProjectModal({ isOpen, onClose, onSave, onDelete, initialData }:
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest text-stone-500 font-bold mb-2">Data de Lançamento</label>
               <input
@@ -134,7 +134,7 @@ export function ProjectModal({ isOpen, onClose, onSave, onDelete, initialData }:
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest text-stone-500 font-bold mb-2">Arte Finalizada?</label>
               <select
@@ -204,32 +204,32 @@ export function ProjectModal({ isOpen, onClose, onSave, onDelete, initialData }:
             </div>
           </div>
 
-          <div className="pt-6 flex justify-between gap-3 border-t border-stone-100 items-center">
+          <div className="pt-6 flex flex-col sm:flex-row justify-between gap-4 border-t border-stone-100 items-center">
             {initialData && onDelete ? (
               <button
                 type="button"
                 onClick={() => onDelete(initialData.id)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 sm:py-2.5 rounded-full text-xs font-bold text-red-600 hover:bg-red-50 transition-colors bg-red-50 sm:bg-transparent"
                 disabled={isUploading}
               >
                 <Trash2 className="w-4 h-4" /> Excluir
               </button>
             ) : (
-              <div />
+              <div className="hidden sm:block" />
             )}
-            <div className="flex gap-3">
+            <div className="flex gap-3 w-full sm:w-auto mt-2 sm:mt-0">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isUploading}
-                className="px-6 py-2.5 rounded-full text-xs font-bold text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors disabled:opacity-50"
+                className="flex-1 sm:flex-none px-6 py-3 sm:py-2.5 rounded-full text-xs font-bold text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isUploading}
-                className="px-6 py-2.5 rounded-full text-xs font-bold bg-stone-900 text-white hover:bg-stone-800 active:scale-95 transition-all shadow-md disabled:opacity-50"
+                className="flex-1 sm:flex-none px-6 py-3 sm:py-2.5 rounded-full text-xs font-bold bg-stone-900 text-white hover:bg-stone-800 active:scale-95 transition-all shadow-md disabled:opacity-50"
               >
                 Salvar Projeto
               </button>

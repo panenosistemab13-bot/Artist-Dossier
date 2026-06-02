@@ -114,20 +114,20 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col xl:flex-row gap-16 xl:gap-24 pt-8 md:pt-16">
+          <div className="flex flex-col xl:flex-row gap-12 md:gap-16 xl:gap-24 pt-4 md:pt-16">
             {/* Context Header */}
-            <div className="w-full xl:w-1/3 xl:sticky xl:top-16 self-start max-w-xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 text-[10px] font-bold uppercase tracking-widest text-white mb-8 shadow-sm">
+            <div className="w-full xl:w-1/3 xl:sticky xl:top-16 self-start max-w-xl text-center xl:text-left mx-auto xl:mx-0">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 text-[10px] font-bold uppercase tracking-widest text-white mb-6 md:mb-8 shadow-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                 Painel Central
               </div>
               
-              <h1 className="text-6xl md:text-8xl font-serif text-white leading-[0.9] tracking-tighter mb-8 drop-shadow-md">
+              <h1 className="text-6xl sm:text-7xl md:text-8xl font-serif text-white leading-[0.9] tracking-tighter mb-6 md:mb-8 drop-shadow-md">
                 Artist<br />
                 <span className="text-stone-300">Dossier.</span>
               </h1>
               
-              <p className="text-stone-300 text-lg md:text-xl font-medium leading-relaxed mb-10 max-w-md drop-shadow-sm">
+              <p className="text-stone-300 text-base md:text-xl font-medium leading-relaxed mb-8 md:mb-10 max-w-md mx-auto xl:mx-0 drop-shadow-sm">
                 Gerencie todos os seus artistas em um só lugar. Organize biografias, estruture álbuns e planeje lançamentos futuros.
               </p>
               
@@ -141,9 +141,9 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
             </div>
 
             {/* Grid */}
-            <div className="w-full xl:w-2/3">
+            <div className="w-full xl:w-2/3 pb-12">
               {artists.length === 0 ? (
-                <div className="w-full bg-black/40 backdrop-blur-md rounded-[2rem] border border-white/20 border-dashed p-16 flex flex-col items-center justify-center text-center">
+                <div className="w-full bg-black/40 backdrop-blur-md rounded-[2rem] border border-white/20 border-dashed p-10 md:p-16 flex flex-col items-center justify-center text-center">
                   <Users className="w-16 h-16 text-stone-400 mb-6" />
                   <h3 className="text-2xl font-serif text-white mb-2">Nenhum artista</h3>
                   <p className="text-stone-400 font-medium tracking-wide">Seu catálogo está vazio. Comece adicionando um novo artista.</p>
@@ -166,9 +166,9 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
                         <div className="absolute inset-0 bg-stone-900/10 group-hover:bg-transparent transition-colors duration-500"></div>
                       </div>
                       
-                      <div className="flex-1 pr-6 relative z-10">
-                        <h3 className="font-serif text-2xl text-white leading-tight mb-2 tracking-tight group-hover:text-amber-400 transition-colors">{artist.name}</h3>
-                        <div className="flex items-center gap-2 text-stone-300 font-medium text-xs tracking-wider uppercase">
+                      <div className="flex-1 pr-12 md:pr-6 relative z-10">
+                        <h3 className="font-serif text-xl sm:text-2xl text-white leading-tight mb-1 sm:mb-2 tracking-tight group-hover:text-amber-400 transition-colors">{artist.name}</h3>
+                        <div className="flex items-center gap-2 text-stone-300 font-medium text-[10px] sm:text-xs tracking-wider uppercase">
                           <span className="font-bold">Acessar Dossiê</span>
                           <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform duration-300 text-amber-500" />
                         </div>
@@ -181,7 +181,7 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
                              removeArtist(artist.id);
                            }
                          }}
-                         className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500/20 text-stone-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                         className="absolute sm:top-4 sm:right-4 top-1/2 -translate-y-1/2 sm:translate-y-0 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500/20 text-stone-300 hover:text-red-400 transition-colors opacity-100 sm:opacity-0 group-hover:opacity-100"
                          title="Remover Artista"
                       >
                         <Trash2 className="w-4 h-4" />

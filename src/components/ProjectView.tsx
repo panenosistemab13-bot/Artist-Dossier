@@ -40,8 +40,8 @@ export function ProjectView({ project, onBack, onUpdate, onEditAction }: Project
   return (
     <div className="flex flex-col bg-[#F7F7F5] min-h-screen text-stone-900 font-sans animate-in fade-in duration-300 relative z-10 w-full absolute inset-0">
       {/* Header / Hero */}
-      <div className="px-6 md:px-12 pt-16 pb-8 max-w-[1400px] mx-auto w-full">
-        <button onClick={onBack} className="flex items-center gap-2 text-stone-500 hover:text-stone-900 mb-8 transition-colors font-medium">
+      <div className="px-4 md:px-12 pt-8 md:pt-16 pb-8 max-w-[1400px] mx-auto w-full">
+        <button onClick={onBack} className="flex items-center gap-2 text-stone-500 hover:text-stone-900 mb-6 md:mb-8 transition-colors font-medium">
           <ArrowLeft className="w-4 h-4" /> Voltar
         </button>
         
@@ -57,8 +57,8 @@ export function ProjectView({ project, onBack, onUpdate, onEditAction }: Project
           </div>
           <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start w-full">
             <Badge value={project.format} type="format" />
-            <h1 className="text-4xl md:text-6xl font-serif text-stone-900 mt-4 mb-2 heading-shadow">{project.name}</h1>
-            <p className="text-stone-500 font-medium text-lg">{project.releaseDate || 'Lançamento a definir'}</p>
+            <h1 className="text-3xl md:text-6xl font-serif text-stone-900 mt-4 mb-2 heading-shadow px-2">{project.name}</h1>
+            <p className="text-stone-500 font-medium text-base md:text-lg">{project.releaseDate || 'Lançamento a definir'}</p>
             
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-6">
               <button onClick={onEditAction} className="flex items-center gap-2 px-6 py-2.5 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-full font-bold text-sm transition-colors">
@@ -75,10 +75,10 @@ export function ProjectView({ project, onBack, onUpdate, onEditAction }: Project
       </div>
 
       {/* Tracks Section */}
-      <div className="px-6 md:px-12 pb-24 max-w-[1400px] mx-auto w-full flex-1">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-serif text-stone-800">Faixas</h2>
-          <button onClick={handleAddTrack} className="flex items-center gap-2 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-bold text-sm shadow-md transition-all active:scale-95">
+      <div className="px-4 md:px-12 pb-24 max-w-[1400px] mx-auto w-full flex-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <h2 className="text-2xl font-serif text-stone-800 text-center sm:text-left">Faixas</h2>
+          <button onClick={handleAddTrack} className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-bold text-sm shadow-md transition-all active:scale-95 w-full sm:w-auto">
             <Plus className="w-4 h-4" /> Adicionar Faixa
           </button>
         </div>
@@ -105,6 +105,25 @@ const TrackItem: React.FC<{ track: Track; onUpdate: (t: Track) => void; onDelete
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  const [localName, setLocalName] = useState(track.name);
+
+  // Sync local state if track.name updates from server/outside
+  React.useEffect(() => {
+    setLocalName(track.name);
+  }, [track.name]);
+
+  const handleNameBlur = () => {
+    if (localName !== track.name) {
+      onUpdate({ ...track, name: localName });
+    }
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur(); // Triggers handleNameBlur
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,15 +152,17 @@ const TrackItem: React.FC<{ track: Track; onUpdate: (t: Track) => void; onDelete
   };
 
   return (
-    <div className="group flex flex-col md:flex-row md:items-center gap-4 p-4 bg-white rounded-2xl border border-stone-200 shadow-sm hover:shadow-md transition-all">
-      <div className="flex items-center gap-4 flex-1">
-        <span className="w-8 text-center text-stone-400 font-bold font-mono text-sm">{String(track.order).padStart(2, '0')}</span>
+    <div className="group flex flex-col md:flex-row md:items-center gap-4 p-4 bg-white rounded-xl md:rounded-2xl border border-stone-200 shadow-sm hover:shadow-md transition-all">
+      <div className="flex items-center gap-3 md:gap-4 flex-1 w-full">
+        <span className="w-6 md:w-8 text-center text-stone-400 font-bold font-mono text-xs md:text-sm shrink-0">{String(track.order).padStart(2, '0')}</span>
         
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 pr-2">
           <input 
             type="text" 
-            value={track.name}
-            onChange={e => onUpdate({ ...track, name: e.target.value })}
+            value={localName}
+            onChange={e => setLocalName(e.target.value)}
+            onBlur={handleNameBlur}
+            onKeyDown={handleNameKeyDown}
             className="bg-transparent text-stone-800 font-bold text-lg focus:outline-none focus:border-b-2 focus:border-amber-500 w-full truncate"
             placeholder="Nome da faixa"
           />
@@ -153,7 +174,7 @@ const TrackItem: React.FC<{ track: Track; onUpdate: (t: Track) => void; onDelete
         </div>
       </div>
 
-      <div className="flex items-center justify-between md:justify-end gap-3 pl-12 md:pl-0 mt-2 md:mt-0">
+      <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 md:gap-3 pl-9 md:pl-0 mt-3 md:mt-0 pt-3 md:pt-0 border-t border-stone-100 md:border-transparent">
         <div className="flex items-center gap-2">
           {track.audioUrl ? (
             <>
@@ -183,7 +204,7 @@ const TrackItem: React.FC<{ track: Track; onUpdate: (t: Track) => void; onDelete
             <button 
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-full font-semibold text-xs flex items-center gap-2 transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-full font-semibold text-[11px] md:text-xs flex items-center gap-2 transition-colors disabled:opacity-50 h-10 md:h-auto"
             >
               {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               {isUploading ? 'Enviando...' : 'Anexar Áudio'}

@@ -4,6 +4,7 @@ import { ArtistDossier } from './components/ArtistDossier';
 import { Artist } from './types';
 import { subscribeToArtists } from './lib/services';
 import { Loader2 } from 'lucide-react';
+import { InstallPrompt } from './components/InstallPrompt';
 
 export default function App() {
   const [artists, setArtists] = useState<Artist[]>([]);
@@ -37,10 +38,20 @@ export default function App() {
   if (activeArtistId) {
     const activeArtist = artists.find(a => a.id === activeArtistId);
     if (activeArtist) {
-      return <ArtistDossier artist={activeArtist} onBack={() => setActiveArtistId(null)} />;
+      return (
+        <>
+          <InstallPrompt />
+          <ArtistDossier artist={activeArtist} onBack={() => setActiveArtistId(null)} />
+        </>
+      );
     }
   }
 
-  return <ArtistList artists={artists} onSelectArtist={setActiveArtistId} />;
+  return (
+    <>
+      <InstallPrompt />
+      <ArtistList artists={artists} onSelectArtist={setActiveArtistId} />
+    </>
+  );
 }
 

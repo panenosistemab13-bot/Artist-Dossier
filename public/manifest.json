@@ -1,0 +1,21 @@
+{
+  "name": "Artist Dossier",
+  "short_name": "ArtDossier",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c1917",
+  "theme_color": "#1c1917",
+  "description": "Gerencie projetos e lançamentos de seus artistas.",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/HsMtzJny/Gemini-Generated-Image-9a8kte9a8kte9a8k.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.postimg.cc/HsMtzJny/Gemini-Generated-Image-9a8kte9a8kte9a8k.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

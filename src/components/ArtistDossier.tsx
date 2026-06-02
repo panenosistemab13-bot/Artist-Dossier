@@ -112,8 +112,8 @@ export function ArtistDossier({ artist, onBack }: ArtistDossierProps) {
       </div>
 
       {/* Header Minimalist */}
-      <header className="px-6 md:px-12 pt-12 pb-8 max-w-[1400px] mx-auto w-full flex flex-col md:flex-row justify-between items-center gap-8">
-        <div className="flex items-center gap-6">
+      <header className="px-4 md:px-12 pt-8 md:pt-12 pb-8 max-w-[1400px] mx-auto w-full flex flex-col md:flex-row justify-between items-center gap-8">
+        <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 w-full">
           <div 
             className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden shadow-md shrink-0 border-4 border-white relative group cursor-pointer bg-stone-100"
             onClick={() => { if (!isUploading) fileInputRef.current?.click(); }}
@@ -149,9 +149,9 @@ export function ArtistDossier({ artist, onBack }: ArtistDossierProps) {
               className="hidden" 
             />
           </div>
-          <div>
+          <div className="flex flex-col items-center md:items-start w-full">
             <p className="text-xs font-bold tracking-[0.2em] uppercase text-amber-600 mb-1">Dossiê do Artista</p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center md:justify-start gap-3 w-full">
               {isEditingName ? (
                 <input
                   type="text"
@@ -168,11 +168,11 @@ export function ArtistDossier({ artist, onBack }: ArtistDossierProps) {
                     }
                   }}
                   autoFocus
-                  className="text-5xl md:text-6xl font-serif text-stone-900 bg-transparent border-b border-amber-500 focus:outline-none w-full"
+                  className="text-4xl md:text-6xl font-serif text-stone-900 bg-transparent border-b border-amber-500 focus:outline-none w-full text-center md:text-left"
                 />
               ) : (
-                <div className="flex items-center gap-3 group">
-                  <h1 className="text-5xl md:text-6xl font-serif text-stone-900 heading-shadow">{artistName}</h1>
+                <div className="flex items-center justify-center md:justify-start gap-3 group w-full">
+                  <h1 className="text-4xl md:text-6xl font-serif text-stone-900 heading-shadow text-center md:text-left px-2">{artistName}</h1>
                   <button 
                     onClick={() => setIsEditingName(true)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity text-stone-400 hover:text-amber-600"
