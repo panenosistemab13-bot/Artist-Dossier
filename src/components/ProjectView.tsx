@@ -157,6 +157,7 @@ const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playPromiseRef = useRef<Promise<void> | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
@@ -172,6 +173,18 @@ const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void 
       audioRef.current.load();
     }
   }, [resolvedAudioUrl]);
+
+  React.useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+  }, []);
   
   const [description, setDescription] = useState(project.description || '');
 
@@ -213,13 +226,36 @@ const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void 
 
   const togglePlay = () => {
     if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
+    
+    const isPaused = audioRef.current.paused;
+    if (!isPaused) {
+      if (playPromiseRef.current !== null) {
+        playPromiseRef.current
+          .then(() => {
+            if (audioRef.current) {
+              audioRef.current.pause();
+            }
+          })
+          .catch((err) => {
+            console.warn('Play promise was rejected, pause ignored:', err);
+          });
+      } else {
+        audioRef.current.pause();
+      }
     } else {
-      audioRef.current.play().catch((err) => {
-        console.error('Error playing audio:', err);
-        setIsPlaying(false);
-      });
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromiseRef.current = playPromise;
+        playPromise
+          .then(() => {
+            playPromiseRef.current = null;
+          })
+          .catch((err) => {
+            console.error('Error playing audio:', err);
+            setIsPlaying(false);
+            playPromiseRef.current = null;
+          });
+      }
     }
   };
 
@@ -253,7 +289,6 @@ const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void 
             {track.audioUrl && (
               <>
                 <audio 
-                  key={resolvedAudioUrl || 'unresolved'}
                   ref={audioRef} 
                   src={resolvedAudioUrl} 
                   preload="auto"
@@ -353,6 +388,7 @@ const TrackItem: React.FC<{
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playPromiseRef = useRef<Promise<void> | null>(null);
   const resolvedAudioUrl = useResolvedUrl(track.audioUrl);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -372,6 +408,18 @@ const TrackItem: React.FC<{
       audioRef.current.load();
     }
   }, [resolvedAudioUrl]);
+
+  React.useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+  }, []);
   
   const [localName, setLocalName] = useState(track.name);
 
@@ -410,13 +458,36 @@ const TrackItem: React.FC<{
 
   const togglePlay = () => {
     if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
+    
+    const isPaused = audioRef.current.paused;
+    if (!isPaused) {
+      if (playPromiseRef.current !== null) {
+        playPromiseRef.current
+          .then(() => {
+            if (audioRef.current) {
+              audioRef.current.pause();
+            }
+          })
+          .catch((err) => {
+            console.warn('Play promise was rejected, pause ignored:', err);
+          });
+      } else {
+        audioRef.current.pause();
+      }
     } else {
-      audioRef.current.play().catch((err) => {
-        console.error('Error playing audio:', err);
-        setIsPlaying(false);
-      });
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromiseRef.current = playPromise;
+        playPromise
+          .then(() => {
+            playPromiseRef.current = null;
+          })
+          .catch((err) => {
+            console.error('Error playing audio:', err);
+            setIsPlaying(false);
+            playPromiseRef.current = null;
+          });
+      }
     }
   };
 
@@ -472,7 +543,6 @@ const TrackItem: React.FC<{
             {track.audioUrl ? (
               <>
                 <audio 
-                  key={resolvedAudioUrl || 'unresolved'}
                   ref={audioRef} 
                   src={resolvedAudioUrl} 
                   preload="auto"
