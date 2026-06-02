@@ -4,7 +4,7 @@ import { ProjectGrid } from './ProjectGrid';
 import { ProjectModal } from './ProjectModal';
 import { ProjectView } from './ProjectView';
 import { Project, Artist } from '../types';
-import { subscribeToProjects, saveProject, deleteProject, saveArtist, uploadFile } from '../lib/services';
+import { subscribeToProjects, saveProject, deleteProject, saveArtist, uploadFile, useResolvedUrl } from '../lib/services';
 
 interface ArtistDossierProps {
   artist: Artist;
@@ -21,6 +21,7 @@ export function ArtistDossier({ artist, onBack }: ArtistDossierProps) {
   
   const [artistName, setArtistName] = useState(artist.name);
   const [artistImage, setArtistImage] = useState(artist.image);
+  const resolvedArtistImage = useResolvedUrl(artistImage);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,7 +114,7 @@ export function ArtistDossier({ artist, onBack }: ArtistDossierProps) {
 
   return (
     <div 
-      className="min-h-screen text-stone-900 font-sans flex flex-col antialiased selection:bg-amber-200 relative bg-stone-900 bg-cover bg-center bg-fixed bg-no-repeat"
+      className="min-h-screen text-stone-900 font-sans flex flex-col antialiased selection:bg-amber-200 relative bg-stone-900 bg-cover bg-center md:bg-fixed bg-no-repeat"
       style={{ backgroundImage: 'url(https://i.postimg.cc/MKhty7YT/decouvrir-vivre-investir-brooklyn-quartier-branche-new-york-city.jpg)' }}
     >
       <div className="absolute inset-0 bg-black/60 md:bg-gradient-to-t md:from-black/90 md:from-10% md:to-black/40"></div>
@@ -138,7 +139,7 @@ export function ArtistDossier({ artist, onBack }: ArtistDossierProps) {
               onClick={() => { if (!isUploading) fileInputRef.current?.click(); }}
             >
               <img 
-                src={artistImage} 
+                src={resolvedArtistImage} 
                 alt="Avatar" 
                 referrerPolicy="no-referrer"
                 className={`w-full h-full object-cover ${isUploading ? 'opacity-50' : ''}`}

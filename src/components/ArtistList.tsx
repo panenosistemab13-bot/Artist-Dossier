@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Users, ArrowRight, Camera, Loader2, Trash2 } from 'lucide-react';
 import { Artist } from '../types';
-import { uploadFile, saveArtist, removeArtist } from '../lib/services';
+import { uploadFile, saveArtist, removeArtist, useResolvedUrl } from '../lib/services';
 
 interface ArtistListProps {
   artists: Artist[];
@@ -20,6 +20,9 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
   const [selectedArtistForAuth, setSelectedArtistForAuth] = useState<Artist | null>(null);
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
+
+  const resolvedNewArtistImage = useResolvedUrl(image);
+  const resolvedAuthArtistImage = useResolvedUrl(selectedArtistForAuth?.image);
 
   const handlePasswordChange = (val: string) => {
     const numericValue = val.replace(/\D/g, '').slice(0, 8);
@@ -126,7 +129,7 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
                     onClick={() => !isUploading && fileInputRef.current?.click()}
                   >
                     {image ? (
-                      <img src={image} alt="Preview" referrerPolicy="no-referrer" className={`w-full h-full object-cover transition-opacity duration-300 ${isUploading ? 'opacity-40 scale-105' : 'opacity-100 scale-100'}`} />
+                      <img src={resolvedNewArtistImage} alt="Preview" referrerPolicy="no-referrer" className={`w-full h-full object-cover transition-opacity duration-300 ${isUploading ? 'opacity-40 scale-105' : 'opacity-100 scale-100'}`} />
                     ) : (
                       <div className="flex flex-col items-center gap-1 text-center">
                         <Camera className="w-6 h-6 text-stone-400 group-hover:text-amber-400 transition-colors" />
@@ -223,51 +226,16 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-fit">
                   {artists.map((artist, index) => (
-                    <div 
-                      key={artist.id} 
-                      onClick={() => {
-                        if (artist.password) {
-                          setSelectedArtistForAuth(artist);
-                          setAuthPassword('');
-                          setAuthError('');
-                        } else {
-                          onSelectArtist(artist.id);
-                        }
-                      }}
-                      className="group bg-black/40 backdrop-blur-md rounded-[2rem] p-3 shadow-lg hover:shadow-xl hover:shadow-stone-900/50 transition-all duration-500 cursor-pointer border border-white/10 hover:border-white/20 flex items-center gap-5 relative overflow-hidden"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className="w-24 h-24 rounded-[1.5rem] overflow-hidden shrink-0 shadow-inner relative">
-                        <img 
-                          src={artist.image} 
-                          alt={artist.name} 
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                        />
-                        <div className="absolute inset-0 bg-stone-900/10 group-hover:bg-transparent transition-colors duration-500"></div>
-                      </div>
-                      
-                      <div className="flex-1 pr-12 md:pr-6 relative z-10">
-                        <h3 className="font-serif text-xl sm:text-2xl text-white leading-tight mb-1 sm:mb-2 tracking-tight group-hover:text-amber-400 transition-colors">{artist.name}</h3>
-                        <div className="flex items-center gap-2 text-stone-300 font-medium text-[10px] sm:text-xs tracking-wider uppercase">
-                          <span className="font-bold">Acessar Dossiê</span>
-                          <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform duration-300 text-amber-500" />
-                        </div>
-                      </div>
-                      
-                      <button
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           if(window.confirm(`Tem certeza que deseja excluir ${artist.name}? Todos os dados serão perdidos.`)) {
-                             removeArtist(artist.id);
-                           }
-                         }}
-                         className="absolute sm:top-4 sm:right-4 top-1/2 -translate-y-1/2 sm:translate-y-0 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500/20 text-stone-300 hover:text-red-400 transition-colors opacity-100 sm:opacity-0 group-hover:opacity-100"
-                         title="Remover Artista"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <ArtistListItem
+                      key={artist.id}
+                      artist={artist}
+                      index={index}
+                      onSelectArtist={onSelectArtist}
+                      setSelectedArtistForAuth={setSelectedArtistForAuth}
+                      setAuthPassword={setAuthPassword}
+                      setAuthError={setAuthError}
+                      removeArtist={removeArtist}
+                    />
                   ))}
                 </div>
               )}
@@ -282,7 +250,7 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500"></div>
               
               <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 shadow-2xl border-2 border-white/20">
-                <img src={selectedArtistForAuth.image} alt={selectedArtistForAuth.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                <img src={resolvedAuthArtistImage} alt={selectedArtistForAuth.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
               </div>
               
               <h3 className="text-2xl font-serif text-white text-center mb-1">{selectedArtistForAuth.name}</h3>
@@ -332,3 +300,72 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
     </div>
   );
 }
+
+interface ArtistListItemProps {
+  artist: Artist;
+  index: number;
+  onSelectArtist: (id: string) => void;
+  setSelectedArtistForAuth: (artist: Artist) => void;
+  setAuthPassword: (val: string) => void;
+  setAuthError: (val: string) => void;
+  removeArtist: (id: string) => void;
+}
+
+const ArtistListItem: React.FC<ArtistListItemProps> = ({
+  artist,
+  index,
+  onSelectArtist,
+  setSelectedArtistForAuth,
+  setAuthPassword,
+  setAuthError,
+  removeArtist
+}) => {
+  const resolvedImage = useResolvedUrl(artist.image);
+
+  return (
+    <div 
+      onClick={() => {
+        if (artist.password) {
+          setSelectedArtistForAuth(artist);
+          setAuthPassword('');
+          setAuthError('');
+        } else {
+          onSelectArtist(artist.id);
+        }
+      }}
+      className="group bg-black/40 backdrop-blur-md rounded-[2rem] p-3 shadow-lg hover:shadow-xl hover:shadow-stone-900/50 transition-all duration-500 cursor-pointer border border-white/10 hover:border-white/20 flex items-center gap-5 relative overflow-hidden"
+      style={{ animationDelay: `${index * 50}ms` }}
+    >
+      <div className="w-24 h-24 rounded-[1.5rem] overflow-hidden shrink-0 shadow-inner relative">
+        <img 
+          src={resolvedImage} 
+          alt={artist.name} 
+          referrerPolicy="no-referrer"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+        />
+        <div className="absolute inset-0 bg-stone-900/10 group-hover:bg-transparent transition-colors duration-500"></div>
+      </div>
+      
+      <div className="flex-1 pr-12 md:pr-6 relative z-10">
+        <h3 className="font-serif text-xl sm:text-2xl text-white leading-tight mb-1 sm:mb-2 tracking-tight group-hover:text-amber-400 transition-colors">{artist.name}</h3>
+        <div className="flex items-center gap-2 text-stone-300 font-medium text-[10px] sm:text-xs tracking-wider uppercase">
+          <span className="font-bold">Acessar Dossiê</span>
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform duration-300 text-amber-500" />
+        </div>
+      </div>
+      
+      <button
+         onClick={(e) => {
+           e.stopPropagation();
+           if(window.confirm(`Tem certeza que deseja excluir ${artist.name}? Todos os dados serão perdidos.`)) {
+             removeArtist(artist.id);
+           }
+         }}
+         className="absolute sm:top-4 sm:right-4 top-1/2 -translate-y-1/2 sm:translate-y-0 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500/20 text-stone-300 hover:text-red-400 transition-colors opacity-100 sm:opacity-0 group-hover:opacity-100"
+         title="Remover Artista"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
+};

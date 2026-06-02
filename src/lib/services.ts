@@ -154,30 +154,81 @@ const resizeImageTo3000px = (file: File): Promise<Blob> => {
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 3000;
-        canvas.height = 3000;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(file);
-          return;
-        }
-
-        // Calculate clipping path to auto-crop central square of the image safely
-        const size = Math.min(img.width, img.height);
-        const xOffset = (img.width - size) / 2;
-        const yOffset = (img.height - size) / 2;
-
-        // Draw and scale to exactly 3000x3000px
-        ctx.drawImage(img, xOffset, yOffset, size, size, 0, 0, 3000, 3000);
-
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 3000;
+          canvas.height = 3000;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
             resolve(file);
+            return;
           }
-        }, 'image/jpeg', 0.95);
+
+          // Calculate clipping path to auto-crop central square of the image safely
+          const size = Math.min(img.width, img.height);
+          const xOffset = (img.width - size) / 2;
+          const yOffset = (img.height - size) / 2;
+
+          // Draw and scale to exactly 3000x3000px
+          ctx.drawImage(img, xOffset, yOffset, size, size, 0, 0, 3000, 3000);
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              resolve(file);
+            }
+          }, 'image/jpeg', 0.95);
+        } catch (e) {
+          console.warn('Canvas resizing to 3000px failed, falling back to original file:', e);
+          resolve(file);
+        }
+      };
+      img.onerror = () => {
+        resolve(file);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => {
+      resolve(file);
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
+const resizeImageToPreview = (file: File | Blob, targetSize: number = 800, quality: number = 0.8): Promise<Blob> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = targetSize;
+          canvas.height = targetSize;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(file);
+            return;
+          }
+
+          const size = Math.min(img.width, img.height);
+          const xOffset = (img.width - size) / 2;
+          const yOffset = (img.height - size) / 2;
+
+          ctx.drawImage(img, xOffset, yOffset, size, size, 0, 0, targetSize, targetSize);
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              resolve(file);
+            }
+          }, 'image/jpeg', quality);
+        } catch (e) {
+          console.warn('Canvas resizing to preview failed, returning original file:', e);
+          resolve(file);
+        }
       };
       img.onerror = () => {
         resolve(file);
@@ -193,7 +244,9 @@ const resizeImageTo3000px = (file: File): Promise<Blob> => {
 
 export const uploadFile = async (file: File, path: string): Promise<string> => {
   let dataToUpload: File | Blob = file;
-  if (file.type.startsWith('image/')) {
+  const isImage = file.type.startsWith('image/');
+
+  if (isImage) {
     try {
       dataToUpload = await resizeImageTo3000px(file);
     } catch (e) {
@@ -203,9 +256,9 @@ export const uploadFile = async (file: File, path: string): Promise<string> => {
 
   try {
     const fileReference = storageRef(storage, path);
-    // Timeout of 2000ms (2 seconds) to avoid long pending states in restricted/unconfigured storage and fallback quickly
+    // Timeout of 15000ms (15 seconds) to give ample space for upload before fallback
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Firebase Storage upload timeout')), 2000)
+      setTimeout(() => reject(new Error('Firebase Storage upload timeout')), 15000)
     );
     const uploadOperation = (async () => {
       await uploadBytes(fileReference, dataToUpload);
@@ -213,20 +266,56 @@ export const uploadFile = async (file: File, path: string): Promise<string> => {
     })();
     return await Promise.race([uploadOperation, timeoutPromise]);
   } catch (error) {
-    console.warn('Firebase Storage upload failed or timed out, falling back to local IndexedDB storage:', error);
+    console.warn('Firebase Storage upload failed or timed out, falling back:', error);
+
+    // If it is an image, fall back to a highly compressed optimized Base64 string for cross-device sync
+    if (isImage) {
+      console.log('Falling back to optimized Base64 representation for image sync across desktop and mobile');
+      try {
+        const previewBlob = await resizeImageToPreview(dataToUpload, 800, 0.8);
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+              resolve(reader.result);
+            } else {
+              reject(new Error('Failed to convert optimized preview image to Base64'));
+            }
+          };
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(previewBlob);
+        });
+      } catch (base64Error) {
+        console.error('Failed to create optimized Base64, falling back to original file as Base64:', base64Error);
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+              resolve(reader.result);
+            } else {
+              reject(new Error('Failed to convert original file to Base64'));
+            }
+          };
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+      }
+    }
+
+    // Audio files continue to fall back to Local IndexedDB
     const fileId = crypto.randomUUID();
     try {
       const dbUrl = await saveLocalFile(fileId, dataToUpload);
       return dbUrl;
     } catch (idbError) {
-      console.error('IndexedDB save failed, falling back to Base64:', idbError);
+      console.error('IndexedDB save failed, falling back to Base64 for audio:', idbError);
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
           if (typeof reader.result === 'string') {
             resolve(reader.result);
           } else {
-            reject(new Error('Failed to convert file to Base64'));
+            reject(new Error('Failed to convert audio to Base64'));
           }
         };
         reader.onerror = () => reject(reader.error);

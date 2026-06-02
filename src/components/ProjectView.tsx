@@ -59,7 +59,7 @@ export function ProjectView({ project, onBack, onUpdate, onEditAction }: Project
 
   return (
     <div 
-      className="flex flex-col min-h-screen text-stone-900 font-sans animate-in fade-in duration-300 relative z-50 w-full absolute inset-0 bg-stone-900 bg-cover bg-center bg-fixed bg-no-repeat"
+      className="flex flex-col min-h-screen text-stone-900 font-sans animate-in fade-in duration-300 relative z-50 w-full bg-stone-900 bg-cover bg-center md:bg-fixed bg-no-repeat"
       style={{ backgroundImage: 'url(https://i.postimg.cc/8PqwhRbh/SCSCS.avif)' }}
     >
       <div className="absolute inset-0 bg-black/60 md:bg-gradient-to-t md:from-black/90 md:from-10% md:to-black/40"></div>
