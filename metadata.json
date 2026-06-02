@@ -1,0 +1,6 @@
+{
+  "name": "Artist Dossier - Jeff Diss",
+  "description": "Uma plataforma estilo Spotify para gerenciar projetos musicais e acompanhar o status de distribuio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
