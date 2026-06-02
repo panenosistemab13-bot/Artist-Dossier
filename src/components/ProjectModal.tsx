@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Image as ImageIcon, Trash2, Upload } from 'lucide-react';
+import { X, Image as ImageIcon, Trash2, Upload, Loader2 } from 'lucide-react';
 import { Format, Status, DistributorStatus, Project } from '../types';
+import { uploadFile } from '../lib/services';
 
 interface ProjectModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export function ProjectModal({ isOpen, onClose, onSave, onDelete, initialData }:
   const [musicDone, setMusicDone] = useState<Status>('NÃO');
   const [distributorStatus, setDistributorStatus] = useState<DistributorStatus>('INCOMPLETA');
   const [coverUrl, setCoverUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function ProjectModal({ isOpen, onClose, onSave, onDelete, initialData }:
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || isUploading) return;
 
     onSave({
       id: initialData ? initialData.id : crypto.randomUUID(),
@@ -57,18 +59,24 @@ export function ProjectModal({ isOpen, onClose, onSave, onDelete, initialData }:
       musicDone,
       distributorStatus,
       // Default placeholder if none provided
-      coverUrl: coverUrl.trim() || 'https://images.unsplash.com/photo-1619983081563-430f63602796?auto=format&fit=crop&q=80&w=150&h=150'
+      coverUrl: coverUrl.trim() || 'https://images.unsplash.com/photo-1619983081563-430f63602796?auto=format&fit=crop&q=80&w=150&h=150',
+      tracks: initialData?.tracks || []
     });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      try {
+        const url = await uploadFile(file, `projects/${crypto.randomUUID()}-${file.name}`);
+        setCoverUrl(url);
+      } catch (err) {
+        console.error('Error uploading file:', err);
+        alert('Erro ao fazer upload da imagem.');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -186,10 +194,11 @@ export function ProjectModal({ isOpen, onClose, onSave, onDelete, initialData }:
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 bg-stone-50 hover:bg-stone-100 border border-stone-200 border-dashed rounded-xl px-4 py-3 text-stone-600 transition-colors font-medium text-sm"
+                  disabled={isUploading}
+                  className="w-full flex items-center justify-center gap-2 bg-stone-50 hover:bg-stone-100 border border-stone-200 border-dashed rounded-xl px-4 py-3 text-stone-600 transition-colors font-medium text-sm disabled:opacity-50"
                 >
-                  <Upload className="w-4 h-4" />
-                  {coverUrl ? 'Alterar Imagem...' : 'Importar do dispositivo...'}
+                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {isUploading ? 'Enviando...' : coverUrl ? 'Alterar Imagem...' : 'Importar do dispositivo...'}
                 </button>
               </div>
             </div>
@@ -201,6 +210,7 @@ export function ProjectModal({ isOpen, onClose, onSave, onDelete, initialData }:
                 type="button"
                 onClick={() => onDelete(initialData.id)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
+                disabled={isUploading}
               >
                 <Trash2 className="w-4 h-4" /> Excluir
               </button>
@@ -211,13 +221,15 @@ export function ProjectModal({ isOpen, onClose, onSave, onDelete, initialData }:
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-2.5 rounded-full text-xs font-bold text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+                disabled={isUploading}
+                className="px-6 py-2.5 rounded-full text-xs font-bold text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-full text-xs font-bold bg-stone-900 text-white hover:bg-stone-800 active:scale-95 transition-all shadow-md"
+                disabled={isUploading}
+                className="px-6 py-2.5 rounded-full text-xs font-bold bg-stone-900 text-white hover:bg-stone-800 active:scale-95 transition-all shadow-md disabled:opacity-50"
               >
                 Salvar Projeto
               </button>

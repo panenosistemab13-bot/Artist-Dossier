@@ -21,3 +21,9 @@ export interface Project {
   coverUrl: string;
   tracks?: Track[];
 }
+
+export interface Artist {
+  id: string;
+  name: string;
+  image: string;
+}

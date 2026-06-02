@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { ArrowLeft, Play, Pause, Edit3, Plus, Music, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Edit3, Plus, Music, Trash2, Upload, Loader2 } from 'lucide-react';
 import { Project, Track } from '../types';
 import { Badge } from './Badge';
+import { uploadFile } from '../lib/services';
 
 interface ProjectViewProps {
   project: Project;
@@ -99,16 +100,25 @@ export function ProjectView({ project, onBack, onUpdate, onEditAction }: Project
   );
 }
 
-function TrackItem({ track, onUpdate, onDelete }: { track: Track; onUpdate: (t: Track) => void; onDelete: (id: string) => void }) {
+const TrackItem: React.FC<{ track: Track; onUpdate: (t: Track) => void; onDelete: (id: string) => void }> = ({ track, onUpdate, onDelete }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      onUpdate({ ...track, audioUrl: url, audioName: file.name });
+      setIsUploading(true);
+      try {
+        const url = await uploadFile(file, `audio/${crypto.randomUUID()}-${file.name}`);
+        onUpdate({ ...track, audioUrl: url, audioName: file.name });
+      } catch (err) {
+        console.error('Error uploading audio:', err);
+        alert('Erro ao enviar áudio');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -162,18 +172,21 @@ function TrackItem({ track, onUpdate, onDelete }: { track: Track; onUpdate: (t: 
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-10 h-10 rounded-full flex items-center justify-center bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors"
+                disabled={isUploading}
+                className="w-10 h-10 rounded-full flex items-center justify-center bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors disabled:opacity-50"
                 title="Trocar áudio"
               >
-                <Upload className="w-4 h-4" />
+                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               </button>
             </>
           ) : (
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-full font-semibold text-xs flex items-center gap-2 transition-colors"
+              disabled={isUploading}
+              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-full font-semibold text-xs flex items-center gap-2 transition-colors disabled:opacity-50"
             >
-              <Upload className="w-4 h-4" /> Anexar Áudio
+              {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {isUploading ? 'Enviando...' : 'Anexar Áudio'}
             </button>
           )}
         </div>
