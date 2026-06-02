@@ -17,6 +17,7 @@ export function ArtistDossier({ artist, onBack }: ArtistDossierProps) {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [viewingProjectId, setViewingProjectId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('TODAS');
   
   const [artistName, setArtistName] = useState(artist.name);
   const [artistImage, setArtistImage] = useState(artist.image);
@@ -25,21 +26,32 @@ export function ArtistDossier({ artist, onBack }: ArtistDossierProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Reset state when artist changes
-    setArtistName(artist.name);
-    setArtistImage(artist.image);
+    // Reset state only when the active artist id actually changes
     setViewingProjectId(null);
     setSearchTerm('');
+    setSelectedStatus('TODAS');
     
     const unsubProjects = subscribeToProjects(artist.id, (data) => setProjects(data));
     return () => {
       unsubProjects();
     };
-  }, [artist]);
+  }, [artist.id]);
+
+  useEffect(() => {
+    setArtistName(artist.name);
+  }, [artist.name]);
+
+  useEffect(() => {
+    setArtistImage(artist.image);
+  }, [artist.image]);
 
   const filteredProjects = useMemo(() => {
-    return projects.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [projects, searchTerm]);
+    return projects.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = selectedStatus === 'TODAS' || p.distributorStatus === selectedStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [projects, searchTerm, selectedStatus]);
 
   const handleSaveProject = async (project: Project) => {
     await saveProject(artist.id, project);
@@ -216,7 +228,35 @@ export function ArtistDossier({ artist, onBack }: ArtistDossierProps) {
         </header>
 
         {/* Grid Content */}
-        <main className="px-6 md:px-12 pb-16 pt-10 max-w-[1400px] mx-auto w-full flex-1">
+        <main className="px-6 md:px-12 pb-16 pt-6 max-w-[1400px] mx-auto w-full flex-1 flex flex-col gap-8">
+          {/* Status Filter Tabs */}
+          <div className="flex items-center justify-start overflow-x-auto pb-2 scrollbar-none w-full border-b border-white/10">
+            <div className="flex gap-2 p-1 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shrink-0 w-auto">
+              {[
+                { value: 'TODAS', label: 'Todas' },
+                { value: 'AO VIVO', label: 'Ao Vivo' },
+                { value: 'ENTREGUE', label: 'Entregue' },
+                { value: 'INCOMPLETA', label: 'Incompleta' },
+                { value: 'EM ANALIZE', label: 'Em Análise' }
+              ].map((tab) => {
+                const isActive = selectedStatus === tab.value;
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => setSelectedStatus(tab.value)}
+                    className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold tracking-wider uppercase transition-all duration-300 whitespace-nowrap ${
+                      isActive 
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-stone-950 font-black shadow-lg shadow-amber-500/20 scale-[1.03]' 
+                        : 'text-stone-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <ProjectGrid projects={filteredProjects} onEdit={handleOpenProject} />
         </main>
 

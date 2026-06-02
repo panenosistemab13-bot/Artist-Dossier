@@ -3,33 +3,236 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { db, storage } from './firebase';
 import { Project, Artist } from '../types';
 import { initialProjects } from '../data';
+import { useState, useEffect } from 'react';
+
+// Native IndexedDB setup for secure local storage fallback of large files (audio/images)
+const DB_NAME = 'ArtistDossierLocalFiles';
+const STORE_NAME = 'files';
+
+function getIDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function saveLocalFile(id: string, file: Blob | string): Promise<string> {
+  const db = await getIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.put(file, id);
+    request.onsuccess = () => resolve(`local-file:${id}`);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function getLocalFile(id: string): Promise<Blob | string | null> {
+  const db = await getIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get(id);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// React hook to convert local-file: ID or Base64 string into a high-performance Blob Object URL
+export function useResolvedUrl(url: string | undefined): string | undefined {
+  const [resolved, setResolved] = useState<string | undefined>(url);
+
+  useEffect(() => {
+    if (!url) {
+      setResolved(undefined);
+      return;
+    }
+
+    if (url.startsWith('local-file:')) {
+      const id = url.replace('local-file:', '');
+      let isMounted = true;
+      let objectUrl: string | null = null;
+
+      getLocalFile(id).then((fileData) => {
+        if (!isMounted) return;
+        if (fileData) {
+          const isBlob = fileData && typeof fileData === 'object' && (
+            fileData instanceof Blob ||
+            (fileData as any).constructor?.name === 'Blob' ||
+            (fileData as any).constructor?.name === 'File' ||
+            ('size' in (fileData as any) && 'type' in (fileData as any))
+          );
+          if (isBlob) {
+            objectUrl = URL.createObjectURL(fileData as Blob);
+            setResolved(objectUrl);
+          } else if (typeof fileData === 'string') {
+            if (fileData.startsWith('data:')) {
+              try {
+                const arr = fileData.split(',');
+                const mime = arr[0].match(/:(.*?);/)?.[1] || '';
+                const bstr = atob(arr[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                  u8arr[n] = bstr.charCodeAt(n);
+                }
+                const blob = new Blob([u8arr], { type: mime });
+                objectUrl = URL.createObjectURL(blob);
+                setResolved(objectUrl);
+              } catch (e) {
+                setResolved(fileData);
+              }
+            } else {
+              setResolved(fileData);
+            }
+          }
+        } else {
+          setResolved(undefined);
+        }
+      }).catch((err) => {
+        console.error('Error loading local file from IndexedDB:', err);
+        setResolved(url); // fallback to original input
+      });
+
+      return () => {
+        isMounted = false;
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
+      };
+    } else if (url.startsWith('data:audio/') || url.startsWith('data:image/')) {
+      // Also intercept raw base64 data URLs to convert them to memory-efficient Blob URLs
+      let isMounted = true;
+      let objectUrl: string | null = null;
+
+      try {
+        const arr = url.split(',');
+        const mime = arr[0].match(/:(.*?);/)?.[1] || '';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        objectUrl = URL.createObjectURL(blob);
+        if (isMounted) {
+          setResolved(objectUrl);
+        }
+      } catch (e) {
+        setResolved(url);
+      }
+
+      return () => {
+        isMounted = false;
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
+      };
+    } else {
+      setResolved(url);
+    }
+  }, [url]);
+
+  return resolved;
+}
+
+const resizeImageTo3000px = (file: File): Promise<Blob> => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 3000;
+        canvas.height = 3000;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        // Calculate clipping path to auto-crop central square of the image safely
+        const size = Math.min(img.width, img.height);
+        const xOffset = (img.width - size) / 2;
+        const yOffset = (img.height - size) / 2;
+
+        // Draw and scale to exactly 3000x3000px
+        ctx.drawImage(img, xOffset, yOffset, size, size, 0, 0, 3000, 3000);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            resolve(file);
+          }
+        }, 'image/jpeg', 0.95);
+      };
+      img.onerror = () => {
+        resolve(file);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => {
+      resolve(file);
+    };
+    reader.readAsDataURL(file);
+  });
+};
 
 export const uploadFile = async (file: File, path: string): Promise<string> => {
+  let dataToUpload: File | Blob = file;
+  if (file.type.startsWith('image/')) {
+    try {
+      dataToUpload = await resizeImageTo3000px(file);
+    } catch (e) {
+      console.warn('Could not resize image to 3000x3000px:', e);
+    }
+  }
+
   try {
     const fileReference = storageRef(storage, path);
-    // Timeout of 1200ms to avoid long pending states in restricted/unconfigured storage
+    // Timeout of 2000ms (2 seconds) to avoid long pending states in restricted/unconfigured storage and fallback quickly
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Firebase Storage upload timeout')), 1200)
+      setTimeout(() => reject(new Error('Firebase Storage upload timeout')), 2000)
     );
     const uploadOperation = (async () => {
-      await uploadBytes(fileReference, file);
+      await uploadBytes(fileReference, dataToUpload);
       return await getDownloadURL(fileReference);
     })();
     return await Promise.race([uploadOperation, timeoutPromise]);
   } catch (error) {
-    console.warn('Firebase Storage upload failed or timed out, falling back to Base64 data URL:', error);
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          resolve(reader.result);
-        } else {
-          reject(new Error('Failed to convert file to Base64'));
-        }
-      };
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
+    console.warn('Firebase Storage upload failed or timed out, falling back to local IndexedDB storage:', error);
+    const fileId = crypto.randomUUID();
+    try {
+      const dbUrl = await saveLocalFile(fileId, dataToUpload);
+      return dbUrl;
+    } catch (idbError) {
+      console.error('IndexedDB save failed, falling back to Base64:', idbError);
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to convert file to Base64'));
+          }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(dataToUpload);
+      });
+    }
   }
 };
 

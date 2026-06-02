@@ -21,6 +21,7 @@ export interface Project {
   coverUrl: string;
   tracks?: Track[];
   description?: string;
+  feats?: string[];
 }
 
 export interface Artist {

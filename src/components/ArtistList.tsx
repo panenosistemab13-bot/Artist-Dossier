@@ -35,6 +35,15 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
     const numericValue = val.replace(/\D/g, '').slice(0, 8);
     setAuthPassword(numericValue);
     setAuthError('');
+
+    if (selectedArtistForAuth && selectedArtistForAuth.password === numericValue) {
+      onSelectArtist(selectedArtistForAuth.id);
+      setSelectedArtistForAuth(null);
+      setAuthPassword('');
+      setAuthError('');
+    } else if (numericValue.length === 8) {
+      setAuthError('Senha incorreta.');
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
