@@ -47,7 +47,12 @@ export async function getLocalFile(id: string): Promise<Blob | string | null> {
 
 // React hook to convert local-file: ID or Base64 string into a high-performance Blob Object URL
 export function useResolvedUrl(url: string | undefined): string | undefined {
-  const [resolved, setResolved] = useState<string | undefined>(url);
+  const [resolved, setResolved] = useState<string | undefined>(() => {
+    if (url && url.startsWith('local-file:')) {
+      return undefined;
+    }
+    return url;
+  });
 
   useEffect(() => {
     if (!url) {
@@ -56,6 +61,7 @@ export function useResolvedUrl(url: string | undefined): string | undefined {
     }
 
     if (url.startsWith('local-file:')) {
+      setResolved(undefined);
       const id = url.replace('local-file:', '');
       let isMounted = true;
       let objectUrl: string | null = null;
