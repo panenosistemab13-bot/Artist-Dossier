@@ -27,7 +27,7 @@ export function ProjectGrid({ projects, onEdit }: ProjectGridProps) {
         >
           <div className="aspect-square w-full bg-stone-100 rounded-2xl overflow-hidden relative">
             {project.coverUrl ? (
-              <img src={project.coverUrl} alt={`Capa ${project.name}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <img src={project.coverUrl} alt={`Capa ${project.name}`} referrerPolicy="no-referrer" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center"><Disc3 className="w-10 h-10 text-stone-300" /></div>
             )}

@@ -5,9 +5,32 @@ import { Project, Artist } from '../types';
 import { initialProjects } from '../data';
 
 export const uploadFile = async (file: File, path: string): Promise<string> => {
-  const fileReference = storageRef(storage, path);
-  await uploadBytes(fileReference, file);
-  return await getDownloadURL(fileReference);
+  try {
+    const fileReference = storageRef(storage, path);
+    // Timeout of 1200ms to avoid long pending states in restricted/unconfigured storage
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Firebase Storage upload timeout')), 1200)
+    );
+    const uploadOperation = (async () => {
+      await uploadBytes(fileReference, file);
+      return await getDownloadURL(fileReference);
+    })();
+    return await Promise.race([uploadOperation, timeoutPromise]);
+  } catch (error) {
+    console.warn('Firebase Storage upload failed or timed out, falling back to Base64 data URL:', error);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+        } else {
+          reject(new Error('Failed to convert file to Base64'));
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
 };
 
 export const subscribeToArtists = (callback: (artists: Artist[]) => void) => {
@@ -20,7 +43,7 @@ export const subscribeToArtists = (callback: (artists: Artist[]) => void) => {
       const initialArtist = {
         name: 'Jeff Diss',
         image: 'https://images.unsplash.com/photo-1543807535-eceef0bc6599?auto=format&fit=crop&q=80&w=300&h=300',
-        password: '#trescafe28'
+        password: '36356918'
       };
       updates['jeff-diss'] = initialArtist;
       update(artistsRef, updates).then(() => {
@@ -41,7 +64,7 @@ export const subscribeToArtists = (callback: (artists: Artist[]) => void) => {
           id: child.key as string,
           name: val.name,
           image: val.image || '',
-          password: val.password || (child.key === 'jeff-diss' ? '#trescafe28' : undefined),
+          password: val.password || (child.key === 'jeff-diss' ? '36356918' : undefined),
         });
       });
     }
@@ -50,10 +73,14 @@ export const subscribeToArtists = (callback: (artists: Artist[]) => void) => {
 };
 
 export const saveArtist = async (artist: Artist) => {
-  await update(dbRef(db, `artists/${artist.id}`), {
+  const data: Record<string, any> = {
     name: artist.name,
     image: artist.image
-  });
+  };
+  if (artist.password !== undefined) {
+    data.password = artist.password;
+  }
+  await update(dbRef(db, `artists/${artist.id}`), data);
 };
 
 export const removeArtist = async (id: string) => {

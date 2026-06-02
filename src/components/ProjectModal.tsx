@@ -180,7 +180,7 @@ export function ProjectModal({ isOpen, onClose, onSave, onDelete, initialData }:
             <div className="flex items-center gap-4">
               {coverUrl && (
                 <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-stone-100 border border-stone-200 shadow-sm">
-                  <img src={coverUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <img src={coverUrl} alt="Preview" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                 </div>
               )}
               <div className="flex-1">

@@ -128,6 +128,7 @@ export function ArtistDossier({ artist, onBack }: ArtistDossierProps) {
               <img 
                 src={artistImage} 
                 alt="Avatar" 
+                referrerPolicy="no-referrer"
                 className={`w-full h-full object-cover ${isUploading ? 'opacity-50' : ''}`}
               />
               <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>

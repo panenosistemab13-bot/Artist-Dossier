@@ -42,7 +42,7 @@ export function InstallPrompt() {
     <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden animate-in slide-in-from-bottom-5 fade-in duration-500">
       <div className="bg-stone-900 rounded-2xl p-4 shadow-2xl flex items-center gap-4 border border-stone-800">
         <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-stone-800">
-          <img src="https://i.postimg.cc/HsMtzJny/Gemini-Generated-Image-9a8kte9a8kte9a8k.png" alt="App Icon" className="w-full h-full object-cover" />
+          <img src="https://i.postimg.cc/HsMtzJny/Gemini-Generated-Image-9a8kte9a8kte9a8k.png" alt="App Icon" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
         </div>
         <div className="flex-1">
           <h3 className="font-bold text-white text-sm">Instalar o App</h3>

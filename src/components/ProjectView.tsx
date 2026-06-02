@@ -55,7 +55,7 @@ export function ProjectView({ project, onBack, onUpdate, onEditAction }: Project
           <div className="flex flex-col md:flex-row items-center md:items-end gap-8">
             <div className="w-48 h-48 md:w-64 md:h-64 rounded-xl overflow-hidden shadow-2xl shrink-0 bg-stone-900 border-4 border-white/20">
               {project.coverUrl ? (
-                <img src={project.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+                <img src={project.coverUrl} alt="Cover" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-stone-500 bg-black/40">
                   <Music className="w-16 h-16 opacity-30" />

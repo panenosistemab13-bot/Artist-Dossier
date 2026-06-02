@@ -13,6 +13,7 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
   const [newName, setNewName] = useState('');
   const [image, setImage] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -20,9 +21,29 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
+  const handlePasswordChange = (val: string) => {
+    const numericValue = val.replace(/\D/g, '').slice(0, 8);
+    setPassword(numericValue);
+    if (numericValue && numericValue.length !== 8) {
+      setPasswordError('A senha deve conter exatamente 8 dígitos numéricos.');
+    } else {
+      setPasswordError('');
+    }
+  };
+
+  const handleAuthPasswordChange = (val: string) => {
+    const numericValue = val.replace(/\D/g, '').slice(0, 8);
+    setAuthPassword(numericValue);
+    setAuthError('');
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || isUploading) return;
+    if (password && password.length !== 8) {
+      setPasswordError('A senha deve conter exatamente 8 dígitos numéricos.');
+      return;
+    }
     const id = crypto.randomUUID();
     await saveArtist({
       id,
@@ -34,6 +55,7 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
     setNewName('');
     setImage('');
     setPassword('');
+    setPasswordError('');
     onSelectArtist(id);
   };
 
@@ -95,7 +117,7 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
                     onClick={() => !isUploading && fileInputRef.current?.click()}
                   >
                     {image ? (
-                      <img src={image} alt="Preview" className={`w-full h-full object-cover transition-opacity duration-300 ${isUploading ? 'opacity-40 scale-105' : 'opacity-100 scale-100'}`} />
+                      <img src={image} alt="Preview" referrerPolicy="no-referrer" className={`w-full h-full object-cover transition-opacity duration-300 ${isUploading ? 'opacity-40 scale-105' : 'opacity-100 scale-100'}`} />
                     ) : (
                       <div className="flex flex-col items-center gap-1 text-center">
                         <Camera className="w-6 h-6 text-stone-400 group-hover:text-amber-400 transition-colors" />
@@ -123,14 +145,22 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest pl-1">Senha da Pasta (Opcional)</label>
+                  <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest pl-1">Senha da Pasta (Opcional - 8 Dígitos Numéricos)</label>
                   <input
                     type="password"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={8}
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="w-full bg-stone-950/60 border border-white/10 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/10 transition-all font-medium placeholder:text-stone-600"
-                    placeholder="Deixe em branco para acesso livre"
+                    onChange={e => handlePasswordChange(e.target.value)}
+                    className="w-full bg-stone-950/60 border border-white/10 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/10 transition-all font-medium placeholder:text-stone-600 tracking-widest text-center"
+                    placeholder="8 dígitos (números apenas)"
                   />
+                  {passwordError && (
+                    <p className="text-amber-500 text-[10px] uppercase font-bold tracking-wider mt-1 text-center select-none">
+                      {passwordError}
+                    </p>
+                  )}
                 </div>
 
                 <div className="pt-2">
@@ -202,6 +232,7 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
                         <img 
                           src={artist.image} 
                           alt={artist.name} 
+                          referrerPolicy="no-referrer"
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                         />
                         <div className="absolute inset-0 bg-stone-900/10 group-hover:bg-transparent transition-colors duration-500"></div>
@@ -237,26 +268,29 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
 
         {selectedArtistForAuth && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedArtistForAuth(null)}></div>
-            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-black/50 max-w-sm w-full relative z-10 overflow-hidden border border-stone-100 animate-in zoom-in-95 duration-200">
-              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-stone-900 via-stone-700 to-amber-500"></div>
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => setSelectedArtistForAuth(null)}></div>
+            <div className="bg-stone-950/90 backdrop-blur-2xl p-8 md:p-10 rounded-[2rem] shadow-2xl shadow-black/80 max-w-sm w-full relative z-10 overflow-hidden border border-white/10 animate-in zoom-in-95 duration-200">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500"></div>
               
-              <div className="w-16 h-16 rounded-full overflow-hidden mx-auto mb-6 shadow-md border-2 border-stone-100">
-                <img src={selectedArtistForAuth.image} alt={selectedArtistForAuth.name} className="w-full h-full object-cover" />
+              <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 shadow-2xl border-2 border-white/20">
+                <img src={selectedArtistForAuth.image} alt={selectedArtistForAuth.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
               </div>
               
-              <h3 className="text-2xl font-serif text-stone-900 text-center mb-2">{selectedArtistForAuth.name}</h3>
-              <p className="text-stone-500 text-sm text-center mb-6 font-medium">Esta pasta é protegida por senha.</p>
+              <h3 className="text-2xl font-serif text-white text-center mb-1">{selectedArtistForAuth.name}</h3>
+              <p className="text-stone-400 text-xs text-center mb-6 font-medium tracking-wide uppercase">Pasta Protegida</p>
               
-              <form onSubmit={handleAuthSubmit} className="space-y-4">
+              <form onSubmit={handleAuthSubmit} className="space-y-5">
                 <input
                   type="password"
                   required
                   autoFocus
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={8}
                   value={authPassword}
-                  onChange={e => setAuthPassword(e.target.value)}
-                  className="w-full bg-[#F7F7F5] border border-stone-200 rounded-xl px-4 py-3 text-stone-900 text-center text-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                  placeholder="Digite a senha..."
+                  onChange={e => handleAuthPasswordChange(e.target.value)}
+                  className="w-full bg-stone-900/80 border border-white/10 rounded-xl px-4 py-3 text-white text-center text-lg focus:outline-none focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/10 transition-all font-mono tracking-widest"
+                  placeholder="8 dígitos"
                 />
                 
                 {authError && <p className="text-red-500 text-xs font-bold text-center uppercase tracking-wider">{authError}</p>}
@@ -265,13 +299,13 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
                   <button 
                     type="button" 
                     onClick={() => setSelectedArtistForAuth(null)}
-                    className="flex-1 px-4 py-3 rounded-xl text-xs font-bold text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+                    className="flex-1 px-4 py-3 rounded-xl text-xs font-bold text-stone-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 px-4 py-3 rounded-xl text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 transition-colors shadow-md"
+                    className="flex-1 px-4 py-3 rounded-xl text-xs font-bold text-stone-950 bg-amber-500 hover:bg-amber-400 transition-all cursor-pointer font-sans uppercase tracking-wider hover:shadow-lg hover:shadow-amber-500/10 active:scale-[0.98]"
                   >
                     Acessar
                   </button>
