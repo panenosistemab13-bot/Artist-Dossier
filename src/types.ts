@@ -20,6 +20,7 @@ export interface Project {
   distributorStatus: DistributorStatus;
   coverUrl: string;
   tracks?: Track[];
+  description?: string;
 }
 
 export interface Artist {

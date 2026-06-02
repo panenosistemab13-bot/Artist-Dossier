@@ -74,31 +74,170 @@ export function ProjectView({ project, onBack, onUpdate, onEditAction }: Project
         <div className="h-px bg-stone-200 w-full mb-12"></div>
       </div>
 
-      {/* Tracks Section */}
+      {/* Tracks/Single Section */}
       <div className="px-4 md:px-12 pb-24 max-w-[1400px] mx-auto w-full flex-1">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <h2 className="text-2xl font-serif text-stone-800 text-center sm:text-left">Faixas</h2>
-          <button onClick={handleAddTrack} className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-bold text-sm shadow-md transition-all active:scale-95 w-full sm:w-auto">
-            <Plus className="w-4 h-4" /> Adicionar Faixa
-          </button>
+          <h2 className="text-2xl font-serif text-stone-800 text-center sm:text-left">
+            {project.format === 'SINGLE' ? 'Detalhes do Single / Áudio' : 'Faixas'}
+          </h2>
+          {project.format !== 'SINGLE' && (
+            <button onClick={handleAddTrack} className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-bold text-sm shadow-md transition-all active:scale-95 w-full sm:w-auto">
+              <Plus className="w-4 h-4" /> Adicionar Faixa
+            </button>
+          )}
         </div>
 
-        {tracks.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-stone-200 border-dashed">
-            <Music className="w-12 h-12 text-stone-300 mx-auto mb-4" />
-            <p className="text-stone-500 font-medium">Nenhuma faixa adicionada ainda.</p>
-          </div>
+        {project.format === 'SINGLE' ? (
+          <SingleEditor project={project} onUpdate={onUpdate} />
         ) : (
-          <div className="flex flex-col gap-3">
-            {tracks.map(track => (
-              <TrackItem key={track.id} track={track} onUpdate={handleUpdateTrack} onDelete={handleDeleteTrack} />
-            ))}
-          </div>
+          <>
+            {tracks.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-3xl border border-stone-200 border-dashed">
+                <Music className="w-12 h-12 text-stone-300 mx-auto mb-4" />
+                <p className="text-stone-500 font-medium">Nenhuma faixa adicionada ainda.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {tracks.map(track => (
+                  <TrackItem key={track.id} track={track} onUpdate={handleUpdateTrack} onDelete={handleDeleteTrack} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
+
+const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void }> = ({ project, onUpdate }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Use the first track as the single's audio container, if it exists
+  const track = project.tracks?.[0] || { id: 'single-track', order: 1, name: project.name };
+  
+  const [description, setDescription] = useState(project.description || '');
+
+  const handleDescBlur = () => {
+    if (description !== project.description) {
+      onUpdate({ ...project, description });
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      try {
+        const url = await uploadFile(file, `audio/${project.id}-${file.name}`);
+        const updatedTrack = { ...track, audioUrl: url, audioName: file.name };
+        
+        onUpdate({ 
+          ...project, 
+          tracks: project.tracks && project.tracks.length > 0 
+            ? [updatedTrack, ...project.tracks.slice(1)] 
+            : [updatedTrack] 
+        });
+      } catch (err) {
+        console.error('Error uploading audio:', err);
+        alert('Erro ao enviar áudio');
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 max-w-3xl mx-auto flex flex-col gap-6 w-full">
+      <div className="space-y-3">
+        <label className="text-sm font-bold tracking-widest text-stone-500 uppercase">
+          Upload de Áudio (Single)
+        </label>
+        <div className="flex flex-col sm:flex-row items-center gap-4 bg-stone-50 p-4 rounded-xl border border-stone-100">
+          <div className="w-16 h-16 rounded-full bg-stone-200 border-2 border-white shadow-sm flex items-center justify-center shrink-0">
+            <Music className="w-8 h-8 text-stone-400" />
+          </div>
+          
+          <div className="flex-1 text-center sm:text-left min-w-0">
+             {track.audioUrl ? (
+               <div>
+                 <p className="font-bold text-stone-800 text-lg truncate">{track.audioName || project.name}</p>
+                 <p className="text-sm text-stone-500">Áudio anexado</p>
+               </div>
+             ) : (
+               <div>
+                 <p className="font-bold text-stone-800 text-lg truncate">Nenhum áudio</p>
+                 <p className="text-sm text-stone-500">Faça o upload do seu single</p>
+               </div>
+             )}
+          </div>
+          
+          <div className="flex items-center gap-2 mt-2 sm:mt-0">
+            {track.audioUrl && (
+              <>
+                <audio 
+                  ref={audioRef} 
+                  src={track.audioUrl} 
+                  onEnded={() => setIsPlaying(false)} 
+                  className="hidden" 
+                />
+                <button 
+                  onClick={togglePlay}
+                  className="w-12 h-12 rounded-full flex items-center justify-center bg-stone-900 text-white hover:bg-stone-800 transition-colors shadow-sm"
+                  title={isPlaying ? "Pausar" : "Tocar"}
+                >
+                  {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
+                </button>
+              </>
+            )}
+            <button 
+               onClick={() => fileInputRef.current?.click()}
+               disabled={isUploading}
+               className="h-12 px-6 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+             >
+               {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+               <span className="hidden sm:inline">{track.audioUrl ? 'Trocar' : 'Upload'}</span>
+             </button>
+             <input 
+                type="file" 
+                accept="audio/*" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                className="hidden" 
+              />
+          </div>
+        </div>
+      </div>
+      
+      <div className="space-y-3">
+        <label className="text-sm font-bold tracking-widest text-stone-500 uppercase flex items-center justify-between">
+          <span>Descrição da Música</span>
+          <span className="text-xs font-normal text-stone-400">Pressione enter ou desfoque para salvar</span>
+        </label>
+        <textarea
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          onBlur={handleDescBlur}
+          placeholder="Escreva sobre a inspiração, conceito e detalhes do single..."
+          className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 min-h-[200px] text-stone-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 resize-y"
+        />
+      </div>
+    </div>
+  );
+};
 
 const TrackItem: React.FC<{ track: Track; onUpdate: (t: Track) => void; onDelete: (id: string) => void }> = ({ track, onUpdate, onDelete }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
