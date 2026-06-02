@@ -227,19 +227,16 @@ const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void 
     const audio = audioRef.current;
     if (!audio) return;
     
-    if (isPlaying) {
+    if (audio.paused) {
+      audio.play().catch((err) => {
+        console.warn('Audio playback prevented or interrupted:', err);
+      });
+    } else {
       try {
         audio.pause();
       } catch (err) {
         console.warn('Error pausing audio:', err);
       }
-      setIsPlaying(false);
-    } else {
-      setIsPlaying(true);
-      audio.play().catch((err) => {
-        console.warn('Audio playback prevented or interrupted:', err);
-        setIsPlaying(false);
-      });
     }
   };
 
@@ -285,7 +282,7 @@ const SingleEditor: React.FC<{ project: Project; onUpdate: (p: Project) => void 
                     console.error("Audio playback error:", e);
                     setIsPlaying(false);
                   }}
-                  className="hidden" 
+                  className="absolute w-0 h-0 opacity-0 pointer-events-none" 
                 />
                 <button 
                   onClick={togglePlay}
@@ -444,19 +441,16 @@ const TrackItem: React.FC<{
     const audio = audioRef.current;
     if (!audio) return;
     
-    if (isPlaying) {
+    if (audio.paused) {
+      audio.play().catch((err) => {
+        console.warn('Audio playback prevented or interrupted:', err);
+      });
+    } else {
       try {
         audio.pause();
       } catch (err) {
         console.warn('Error pausing audio:', err);
       }
-      setIsPlaying(false);
-    } else {
-      setIsPlaying(true);
-      audio.play().catch((err) => {
-        console.warn('Audio playback prevented or interrupted:', err);
-        setIsPlaying(false);
-      });
     }
   };
 
@@ -524,7 +518,7 @@ const TrackItem: React.FC<{
                     console.error("Audio playback error:", e);
                     setIsPlaying(false);
                   }}
-                  className="hidden" 
+                  className="absolute w-0 h-0 opacity-0 pointer-events-none" 
                 />
                 <button 
                   onClick={togglePlay}

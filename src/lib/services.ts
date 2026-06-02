@@ -48,7 +48,8 @@ export async function getLocalFile(id: string): Promise<Blob | string | null> {
 // React hook to convert local-file: ID or Base64 string into a high-performance Blob Object URL
 export function useResolvedUrl(url: string | undefined): string | undefined {
   const [resolved, setResolved] = useState<string | undefined>(() => {
-    if (url && url.startsWith('local-file:')) {
+    if (!url) return undefined;
+    if (url.startsWith('local-file:')) {
       return undefined;
     }
     return url;
@@ -61,7 +62,6 @@ export function useResolvedUrl(url: string | undefined): string | undefined {
     }
 
     if (url.startsWith('local-file:')) {
-      setResolved(undefined);
       const id = url.replace('local-file:', '');
       let isMounted = true;
       let objectUrl: string | null = null;
@@ -79,25 +79,7 @@ export function useResolvedUrl(url: string | undefined): string | undefined {
             objectUrl = URL.createObjectURL(fileData as Blob);
             setResolved(objectUrl);
           } else if (typeof fileData === 'string') {
-            if (fileData.startsWith('data:')) {
-              try {
-                const arr = fileData.split(',');
-                const mime = arr[0].match(/:(.*?);/)?.[1] || '';
-                const bstr = atob(arr[1]);
-                let n = bstr.length;
-                const u8arr = new Uint8Array(n);
-                while (n--) {
-                  u8arr[n] = bstr.charCodeAt(n);
-                }
-                const blob = new Blob([u8arr], { type: mime });
-                objectUrl = URL.createObjectURL(blob);
-                setResolved(objectUrl);
-              } catch (e) {
-                setResolved(fileData);
-              }
-            } else {
-              setResolved(fileData);
-            }
+            setResolved(fileData);
           }
         } else {
           setResolved(undefined);
@@ -106,35 +88,6 @@ export function useResolvedUrl(url: string | undefined): string | undefined {
         console.error('Error loading local file from IndexedDB:', err);
         setResolved(url); // fallback to original input
       });
-
-      return () => {
-        isMounted = false;
-        if (objectUrl) {
-          URL.revokeObjectURL(objectUrl);
-        }
-      };
-    } else if (url.startsWith('data:audio/') || url.startsWith('data:image/')) {
-      // Also intercept raw base64 data URLs to convert them to memory-efficient Blob URLs
-      let isMounted = true;
-      let objectUrl: string | null = null;
-
-      try {
-        const arr = url.split(',');
-        const mime = arr[0].match(/:(.*?);/)?.[1] || '';
-        const bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) {
-          u8arr[n] = bstr.charCodeAt(n);
-        }
-        const blob = new Blob([u8arr], { type: mime });
-        objectUrl = URL.createObjectURL(blob);
-        if (isMounted) {
-          setResolved(objectUrl);
-        }
-      } catch (e) {
-        setResolved(url);
-      }
 
       return () => {
         isMounted = false;
@@ -308,7 +261,26 @@ export const uploadFile = async (file: File, path: string): Promise<string> => {
       }
     }
 
-    // Audio files continue to fall back to Local IndexedDB
+    // For audio files (or any other files) under 12MB, we fall back to Base64 to ensure cross-device synchronization.
+    // This allows the audio to be synchronized and played across desktop, mobile, and web devices
+    // even if Firebase Storage uploads fail or are blocked by security rules.
+    if (dataToUpload.size < 12 * 1024 * 1024) {
+      console.log('Firebase Storage upload failed/timed out inside uploadFile. Falling back to Base64 representation to enable cross-device play.');
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to convert file to Base64'));
+          }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(dataToUpload);
+      });
+    }
+
+    // Audio files larger than 12MB continue to fall back to Local IndexedDB to prevent database inflation
     const fileId = crypto.randomUUID();
     try {
       const dbUrl = await saveLocalFile(fileId, dataToUpload);
