@@ -19,7 +19,8 @@ export const subscribeToArtists = (callback: (artists: Artist[]) => void) => {
       const updates: Record<string, any> = {};
       const initialArtist = {
         name: 'Jeff Diss',
-        image: 'https://images.unsplash.com/photo-1543807535-eceef0bc6599?auto=format&fit=crop&q=80&w=300&h=300'
+        image: 'https://images.unsplash.com/photo-1543807535-eceef0bc6599?auto=format&fit=crop&q=80&w=300&h=300',
+        password: '#trescafe28'
       };
       updates['jeff-diss'] = initialArtist;
       update(artistsRef, updates).then(() => {
@@ -40,6 +41,7 @@ export const subscribeToArtists = (callback: (artists: Artist[]) => void) => {
           id: child.key as string,
           name: val.name,
           image: val.image || '',
+          password: val.password || (child.key === 'jeff-diss' ? '#trescafe28' : undefined),
         });
       });
     }

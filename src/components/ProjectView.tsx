@@ -38,73 +38,81 @@ export function ProjectView({ project, onBack, onUpdate, onEditAction }: Project
   };
 
   return (
-    <div className="flex flex-col bg-[#F7F7F5] min-h-screen text-stone-900 font-sans animate-in fade-in duration-300 relative z-10 w-full absolute inset-0">
-      {/* Header / Hero */}
-      <div className="px-4 md:px-12 pt-8 md:pt-16 pb-8 max-w-[1400px] mx-auto w-full">
-        <button onClick={onBack} className="flex items-center gap-2 text-stone-500 hover:text-stone-900 mb-6 md:mb-8 transition-colors font-medium">
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </button>
-        
-        <div className="flex flex-col md:flex-row items-center md:items-end gap-8">
-          <div className="w-48 h-48 md:w-64 md:h-64 rounded-xl overflow-hidden shadow-lg shrink-0 bg-stone-200 border-4 border-white">
-            {project.coverUrl ? (
-              <img src={project.coverUrl} alt="Cover" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-stone-400">
-                <Music className="w-16 h-16 opacity-30" />
+    <div 
+      className="flex flex-col min-h-screen text-stone-900 font-sans animate-in fade-in duration-300 relative z-50 w-full absolute inset-0 bg-stone-900 bg-cover bg-center bg-fixed bg-no-repeat"
+      style={{ backgroundImage: 'url(https://i.postimg.cc/8PqwhRbh/SCSCS.avif)' }}
+    >
+      <div className="absolute inset-0 bg-black/60 md:bg-gradient-to-t md:from-black/90 md:from-10% md:to-black/40"></div>
+      
+      {/* Content wrapper */}
+      <div className="relative z-10 flex flex-col flex-1">
+        {/* Header / Hero */}
+        <div className="px-4 md:px-12 pt-8 md:pt-16 pb-8 max-w-[1400px] mx-auto w-full">
+          <button onClick={onBack} className="flex items-center gap-2 text-stone-300 hover:text-white mb-6 md:mb-8 transition-colors font-bold uppercase tracking-wider text-xs">
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </button>
+          
+          <div className="flex flex-col md:flex-row items-center md:items-end gap-8">
+            <div className="w-48 h-48 md:w-64 md:h-64 rounded-xl overflow-hidden shadow-2xl shrink-0 bg-stone-900 border-4 border-white/20">
+              {project.coverUrl ? (
+                <img src={project.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-stone-500 bg-black/40">
+                  <Music className="w-16 h-16 opacity-30" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start w-full">
+              <Badge value={project.format} type="format" />
+              <h1 className="text-3xl md:text-6xl font-serif text-white mt-4 mb-2 heading-shadow px-2 drop-shadow-md">{project.name}</h1>
+              <p className="text-stone-300 font-medium text-base md:text-lg drop-shadow-sm">{project.releaseDate || 'Lançamento a definir'}</p>
+              
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-6">
+                <button onClick={onEditAction} className="flex items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white rounded-full font-bold text-sm transition-colors shadow-sm">
+                  <Edit3 className="w-4 h-4" /> Editar Projeto
+                </button>
               </div>
-            )}
-          </div>
-          <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start w-full">
-            <Badge value={project.format} type="format" />
-            <h1 className="text-3xl md:text-6xl font-serif text-stone-900 mt-4 mb-2 heading-shadow px-2">{project.name}</h1>
-            <p className="text-stone-500 font-medium text-base md:text-lg">{project.releaseDate || 'Lançamento a definir'}</p>
-            
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-6">
-              <button onClick={onEditAction} className="flex items-center gap-2 px-6 py-2.5 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-full font-bold text-sm transition-colors">
-                <Edit3 className="w-4 h-4" /> Editar Projeto
-              </button>
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Divider */}
-      <div className="w-full max-w-[1400px] mx-auto px-6 md:px-12">
-        <div className="h-px bg-stone-200 w-full mb-12"></div>
-      </div>
-
-      {/* Tracks/Single Section */}
-      <div className="px-4 md:px-12 pb-24 max-w-[1400px] mx-auto w-full flex-1">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <h2 className="text-2xl font-serif text-stone-800 text-center sm:text-left">
-            {project.format === 'SINGLE' ? 'Detalhes do Single / Áudio' : 'Faixas'}
-          </h2>
-          {project.format !== 'SINGLE' && (
-            <button onClick={handleAddTrack} className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-full font-bold text-sm shadow-md transition-all active:scale-95 w-full sm:w-auto">
-              <Plus className="w-4 h-4" /> Adicionar Faixa
-            </button>
-          )}
+        
+        {/* Divider */}
+        <div className="w-full max-w-[1400px] mx-auto px-6 md:px-12">
+          <div className="h-px bg-white/10 w-full mb-12"></div>
         </div>
 
-        {project.format === 'SINGLE' ? (
-          <SingleEditor project={project} onUpdate={onUpdate} />
-        ) : (
-          <>
-            {tracks.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-3xl border border-stone-200 border-dashed">
-                <Music className="w-12 h-12 text-stone-300 mx-auto mb-4" />
-                <p className="text-stone-500 font-medium">Nenhuma faixa adicionada ainda.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {tracks.map(track => (
-                  <TrackItem key={track.id} track={track} onUpdate={handleUpdateTrack} onDelete={handleDeleteTrack} />
-                ))}
-              </div>
+        {/* Tracks/Single Section */}
+        <div className="px-4 md:px-12 pb-24 max-w-[1400px] mx-auto w-full flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <h2 className="text-2xl font-serif text-white text-center sm:text-left drop-shadow-sm">
+              {project.format === 'SINGLE' ? 'Detalhes do Single / Áudio' : 'Faixas'}
+            </h2>
+            {project.format !== 'SINGLE' && (
+              <button onClick={handleAddTrack} className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-white text-stone-900 hover:bg-stone-100 rounded-full font-bold text-sm shadow-md transition-all active:scale-95 w-full sm:w-auto">
+                <Plus className="w-4 h-4" /> Adicionar Faixa
+              </button>
             )}
-          </>
-        )}
+          </div>
+
+          {project.format === 'SINGLE' ? (
+            <SingleEditor project={project} onUpdate={onUpdate} />
+          ) : (
+            <>
+              {tracks.length === 0 ? (
+                <div className="text-center py-16 bg-black/40 backdrop-blur-md rounded-3xl border border-white/20 border-dashed">
+                  <Music className="w-12 h-12 text-stone-400 mx-auto mb-4" />
+                  <p className="text-stone-300 font-medium">Nenhuma faixa adicionada ainda.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {tracks.map(track => (
+                    <TrackItem key={track.id} track={track} onUpdate={handleUpdateTrack} onDelete={handleDeleteTrack} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

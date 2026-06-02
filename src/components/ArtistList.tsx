@@ -12,8 +12,13 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [image, setImage] = useState('');
+  const [password, setPassword] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [selectedArtistForAuth, setSelectedArtistForAuth] = useState<Artist | null>(null);
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,11 +27,13 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
     await saveArtist({
       id,
       name: newName,
-      image: image || 'https://images.unsplash.com/photo-1543807535-eceef0bc6599?auto=format&fit=crop&q=80&w=300&h=300'
+      image: image || 'https://images.unsplash.com/photo-1543807535-eceef0bc6599?auto=format&fit=crop&q=80&w=300&h=300',
+      password: password.trim() || undefined
     });
     setIsCreating(false);
     setNewName('');
     setImage('');
+    setPassword('');
     onSelectArtist(id);
   };
 
@@ -46,67 +53,93 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
     }
   };
 
+  const handleAuthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedArtistForAuth?.password === authPassword) {
+      onSelectArtist(selectedArtistForAuth.id);
+      setSelectedArtistForAuth(null);
+      setAuthPassword('');
+      setAuthError('');
+    } else {
+      setAuthError('Senha incorreta.');
+    }
+  };
+
   return (
     <div 
-      className="min-h-screen p-6 md:p-12 antialiased selection:bg-amber-200 relative bg-stone-900 bg-cover bg-center bg-no-repeat"
+      className="min-h-screen flex flex-col p-6 md:p-12 antialiased selection:bg-amber-200 relative bg-stone-900 bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: 'url(https://i.postimg.cc/xjgxHVWw/wp4114246.jpg)' }}
     >
       <div className="absolute inset-0 bg-black/70 md:bg-gradient-to-r md:from-black/90 md:to-black/30"></div>
       
-      <div className="max-w-[1400px] mx-auto relative z-10">
+      <div className="max-w-[1400px] mx-auto relative z-10 w-full flex-1 flex flex-col">
         
         {isCreating ? (
-          <div className="min-h-[80vh] flex items-center justify-center">
-            <div className="bg-white p-10 md:p-12 rounded-[2.5rem] shadow-xl shadow-stone-200/50 max-w-lg w-full relative overflow-hidden border border-stone-100">
-              <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-stone-900 via-stone-700 to-amber-500"></div>
+          <div className="min-h-[80vh] flex items-center justify-center p-4">
+            <div className="bg-stone-950/80 backdrop-blur-2xl p-6 md:p-8 rounded-[2rem] shadow-2xl shadow-black/80 max-w-md w-full relative overflow-hidden border border-white/10 animate-in fade-in duration-300">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500"></div>
               <button 
                 onClick={() => setIsCreating(false)}
-                className="absolute top-8 right-8 text-stone-400 hover:text-stone-900 transition-colors"
+                className="absolute top-6 right-6 text-stone-400 hover:text-white hover:bg-white/10 transition-all text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-stone-800 hover:border-stone-700 bg-stone-950/40 backdrop-blur-sm"
                >
-                 Cancelar
-               </button>
+                  Cancelar
+                </button>
               
-              <h2 className="text-4xl font-serif text-stone-900 mb-2 mt-4 tracking-tight">Novo Dossiê</h2>
-              <p className="text-stone-500 font-medium text-sm mb-10">Configure o perfil inicial do artista.</p>
+              <h2 className="text-2xl font-serif text-white mb-1 mt-2 tracking-tight">Novo Dossiê</h2>
+              <p className="text-stone-400 font-medium text-[10px] tracking-widest uppercase mb-6">Configure o perfil inicial do artista</p>
               
-              <form onSubmit={handleCreate} className="space-y-8">
-                <div className="flex flex-col items-center gap-5">
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="flex flex-col items-center gap-3">
                   <div 
-                    className="w-32 h-32 rounded-full border-4 border-white shadow-xl shadow-stone-200/50 overflow-hidden relative group cursor-pointer bg-[#F7F7F5] flex items-center justify-center transition-transform hover:scale-105"
+                    className="w-24 h-24 rounded-full border-2 border-white/10 hover:border-amber-500/50 shadow-2xl overflow-hidden relative group cursor-pointer bg-stone-950/50 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
                     onClick={() => !isUploading && fileInputRef.current?.click()}
                   >
                     {image ? (
-                      <img src={image} alt="Preview" className={`w-full h-full object-cover transition-opacity duration-300 ${isUploading ? 'opacity-50' : 'opacity-100'}`} />
+                      <img src={image} alt="Preview" className={`w-full h-full object-cover transition-opacity duration-300 ${isUploading ? 'opacity-40 scale-105' : 'opacity-100 scale-100'}`} />
                     ) : (
-                      <Camera className="w-8 h-8 text-stone-300" />
+                      <div className="flex flex-col items-center gap-1 text-center">
+                        <Camera className="w-6 h-6 text-stone-400 group-hover:text-amber-400 transition-colors" />
+                        <span className="text-[9px] text-stone-400 font-medium tracking-wide">Adicionar</span>
+                      </div>
                     )}
-                    <div className={`absolute inset-0 bg-stone-900/40 flex items-center justify-center transition-all duration-300 ${isUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 backdrop-blur-sm'}`}>
-                      {isUploading ? <Loader2 className="w-8 h-8 animate-spin text-white" /> : <Camera className="w-8 h-8 text-white" />}
+                    <div className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-all duration-300 ${isUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 backdrop-blur-xs'}`}>
+                      {isUploading ? <Loader2 className="w-6 h-6 animate-spin text-amber-500" /> : <Camera className="w-6 h-6 text-white" />}
                     </div>
                     <input type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} className="hidden" />
                   </div>
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest bg-stone-100 px-3 py-1 rounded-full">Foto do Artista</span>
+                  <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest bg-white/5 border border-white/5 px-3.5 py-1 rounded-full backdrop-blur-sm shadow-sm select-none">Foto do Artista</span>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-[11px] font-bold text-stone-500 uppercase tracking-widest pl-1">Nome Artístico</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest pl-1">Nome Artístico</label>
                   <input
                     type="text"
                     required
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
-                    className="w-full bg-[#F7F7F5] border border-stone-200 rounded-2xl px-5 py-4 text-stone-900 text-lg focus:outline-none focus:border-stone-400 focus:ring-4 focus:ring-stone-100 transition-all font-medium placeholder:text-stone-300"
+                    className="w-full bg-stone-950/60 border border-white/10 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/10 transition-all font-medium placeholder:text-stone-600"
                     placeholder="Ex: The Weeknd"
                   />
                 </div>
 
-                <div className="pt-4">
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest pl-1">Senha da Pasta (Opcional)</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full bg-stone-950/60 border border-white/10 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/10 transition-all font-medium placeholder:text-stone-600"
+                    placeholder="Deixe em branco para acesso livre"
+                  />
+                </div>
+
+                <div className="pt-2">
                   <button
                     type="submit"
                     disabled={isUploading || !newName.trim()}
-                    className="w-full py-4 rounded-2xl text-sm font-bold bg-stone-900 text-white hover:bg-stone-800 transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 shadow-lg flex justify-center items-center gap-2"
+                    className="w-full py-3 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-stone-950 hover:shadow-lg hover:shadow-amber-500/15 transition-all active:scale-[0.98] disabled:opacity-30 disabled:active:scale-100 flex justify-center items-center gap-2 cursor-pointer disabled:cursor-not-allowed font-sans uppercase tracking-wider"
                   >
-                    {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                     {isUploading ? 'Processando...' : 'Criar Dossiê'}
                   </button>
                 </div>
@@ -153,7 +186,15 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
                   {artists.map((artist, index) => (
                     <div 
                       key={artist.id} 
-                      onClick={() => onSelectArtist(artist.id)}
+                      onClick={() => {
+                        if (artist.password) {
+                          setSelectedArtistForAuth(artist);
+                          setAuthPassword('');
+                          setAuthError('');
+                        } else {
+                          onSelectArtist(artist.id);
+                        }
+                      }}
                       className="group bg-black/40 backdrop-blur-md rounded-[2rem] p-3 shadow-lg hover:shadow-xl hover:shadow-stone-900/50 transition-all duration-500 cursor-pointer border border-white/10 hover:border-white/20 flex items-center gap-5 relative overflow-hidden"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
@@ -193,6 +234,57 @@ export function ArtistList({ artists, onSelectArtist }: ArtistListProps) {
             </div>
           </div>
         )}
+
+        {selectedArtistForAuth && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedArtistForAuth(null)}></div>
+            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-black/50 max-w-sm w-full relative z-10 overflow-hidden border border-stone-100 animate-in zoom-in-95 duration-200">
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-stone-900 via-stone-700 to-amber-500"></div>
+              
+              <div className="w-16 h-16 rounded-full overflow-hidden mx-auto mb-6 shadow-md border-2 border-stone-100">
+                <img src={selectedArtistForAuth.image} alt={selectedArtistForAuth.name} className="w-full h-full object-cover" />
+              </div>
+              
+              <h3 className="text-2xl font-serif text-stone-900 text-center mb-2">{selectedArtistForAuth.name}</h3>
+              <p className="text-stone-500 text-sm text-center mb-6 font-medium">Esta pasta é protegida por senha.</p>
+              
+              <form onSubmit={handleAuthSubmit} className="space-y-4">
+                <input
+                  type="password"
+                  required
+                  autoFocus
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  className="w-full bg-[#F7F7F5] border border-stone-200 rounded-xl px-4 py-3 text-stone-900 text-center text-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                  placeholder="Digite a senha..."
+                />
+                
+                {authError && <p className="text-red-500 text-xs font-bold text-center uppercase tracking-wider">{authError}</p>}
+                
+                <div className="flex gap-3 pt-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setSelectedArtistForAuth(null)}
+                    className="flex-1 px-4 py-3 rounded-xl text-xs font-bold text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 px-4 py-3 rounded-xl text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 transition-colors shadow-md"
+                  >
+                    Acessar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <footer className="mt-auto pt-16 pb-4 text-center text-xs text-stone-500 font-medium tracking-widest uppercase">
+          Criado por Jefferson Augusto
+        </footer>
       </div>
     </div>
   );
